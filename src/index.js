@@ -28,6 +28,8 @@ const feedsState = {
   posts: [],
 }
 
+//TODO подумать как сделать так, чтобы рендеры не вызывались по 10 раз
+
 const watchedObject = onChange(state, (path, value, previousValue) => {
   render(state);
 });
