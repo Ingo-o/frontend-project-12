@@ -34,6 +34,7 @@ const watchedObject = onChange(state, (path, value, previousValue) => {
 
 const watchedFeeds = onChange(feedsState, (path, value, previousValue) => {
   console.log(feedsState);
+  renderFeeds(feedsState);
 });
 
 i18next.init({
@@ -69,6 +70,7 @@ const parseRss = (xml, linkToFeed) => {
 
 const getRss = () => {
   const linkToFeed = state.inputValue;
+  //TODO посмотреть как отключить кеш в прокси
   axios.get(`https://allorigins.hexlet.app/get?url=${encodeURIComponent(linkToFeed)}`)
     .then((response) => {
       parseRss(response.data.contents, linkToFeed);
@@ -118,3 +120,79 @@ const render = (state) => {
     urlInput.classList.add('is-invalid');
   }
 };
+
+const renderFeeds = (feedsState) => {
+
+  const divFeeds = document.querySelector('.feeds');
+  divFeeds.textContent = '';
+
+  if (feedsState.feeds.length !== 0) {
+
+    const divCard = document.createElement('div');
+    divCard.classList.add('card', 'border-0');
+    const divCardBody = document.createElement('div');
+    divCardBody.classList.add('card-body');
+    const h2 = document.createElement('h2');
+    h2.classList.add('card-title', 'h4');
+    h2.textContent = 'Фиды';
+    divCardBody.appendChild(h2);
+
+    const ul = document.createElement('ul');
+    ul.classList.add('list-group', 'border-0', 'rounded-0');
+    feedsState.feeds.forEach((feed) => {
+      const li = document.createElement('li');
+      li.classList.add('list-group-item', 'border-0', 'border-end-0');
+      const h3 = document.createElement('h3');
+      h3.classList.add('h6', 'm-0');
+      h3.textContent = feed.title;
+      const p = document.createElement('p');
+      p.classList.add('m-0', 'small', 'text-black-50');
+      p.textContent = feed.description;
+      li.appendChild(h3);
+      li.appendChild(p);
+      ul.appendChild(li);
+    })
+
+    divCard.appendChild(divCardBody);
+    divCard.appendChild(ul);
+    divFeeds.appendChild(divCard);
+  }
+
+  //TODO добавить атрибуты в теги
+  //TODO добавить идентификаторы для выборки + нормализация данных
+  const divPosts = document.querySelector('.posts');
+  divPosts.textContent = '';
+
+  if (feedsState.posts.length !== 0) {
+
+    const divCard = document.createElement('div');
+    divCard.classList.add('card', 'border-0');
+    const divCardBody = document.createElement('div');
+    divCardBody.classList.add('card-body');
+    const h2 = document.createElement('h2');
+    h2.classList.add('card-title', 'h4');
+    h2.textContent = 'Посты';
+    divCardBody.appendChild(h2);
+
+    const ul = document.createElement('ul');
+    ul.classList.add('list-group', 'border-0', 'rounded-0');
+    feedsState.posts.forEach((post) => {
+      const li = document.createElement('li');
+      li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
+      const a = document.createElement('a');
+      a.classList.add('fw-normal', 'link-secondary');
+      a.href = post.link;
+      a.textContent = post.title;
+      const button = document.createElement('button');
+      button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
+      button.textContent = 'Просмотр';
+      li.appendChild(a);
+      li.appendChild(button);
+      ul.appendChild(li);
+    })
+
+    divCard.appendChild(divCardBody);
+    divCard.appendChild(ul);
+    divPosts.appendChild(divCard);
+  }
+}
