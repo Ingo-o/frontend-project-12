@@ -16,6 +16,11 @@ module.exports = {
       template: './index.html',
     }),
   ],
+  devServer: {
+    port: 4200,
+    watchFiles: path.join(__dirname, 'src'),
+    hot: true,
+  },
 
   // resolve: {
   //   extensions: ['.ts', '.js'],
@@ -48,6 +53,6 @@ module.exports = {
         ]
       }
     ]
-  }
+  },
 
 };
