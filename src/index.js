@@ -4,6 +4,8 @@ import './scss/styles.scss';
 //import * as bootstrap from 'bootstrap';
 import onChange from 'on-change';
 import * as yup from 'yup';
+import i18next from 'i18next';
+import resources from './locales/index.js';
 
 // Model
 // Состояние, данные и логика приложения
@@ -13,6 +15,7 @@ const state = {
   isValid: true,
   isActive: true,
   errors: '',
+  lng: 'ru',
 }
 
 const watchedObject = onChange(state, (path, value, previousValue) => {
@@ -20,8 +23,14 @@ const watchedObject = onChange(state, (path, value, previousValue) => {
   render(state);
 });
 
+i18next.init({
+  lng: 'ru',
+  debug: true,
+  resources: resources,
+});
+
 const schema = yup.object().shape({
-  inputValue: yup.string().required('Input field is blank...').url('Incorrect Url...'),
+  inputValue: yup.string().required(i18next.t('blankField')).url(i18next.t('incorrectUrl')),
 });
 
 const onFulfilled = (result) => {
