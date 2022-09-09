@@ -102,6 +102,7 @@ const parseRss = (xml, linkToFeed) => {
       link: item.querySelector('link').textContent,
       feedID: feed.feedID,
       postID: feedsState.postsCount,
+      isViewed: false,
     };
     result.posts.push(postObj);
     feedsState.postsCount += 1;
@@ -115,7 +116,6 @@ const getRss = (linkToFeed) =>
   axios.get(`https://allorigins.hexlet.app/get?url=${encodeURIComponent(linkToFeed)}`);
 
 const updatePosts = () => {
-  console.log('Вызов функции апдейта постов')
   if (feedsState.feeds.length > 0) {
     feedsState.feeds.forEach((feed) => {
       getRss(feed.linkToFeed)
@@ -146,13 +146,20 @@ sendButton.addEventListener('click', (event) => {
 const showModal = (event) => {
   event.preventDefault();
   watchedObject.modal.isModalActive = true;
-  watchedObject.modal.postID = event.target.getAttribute('data-id');
+  const postID = event.target.getAttribute('data-id');
+  watchedObject.modal.postID = postID;
+  // помечаем открытый пост как просмотренный
+  watchedFeeds.posts.forEach((post) => {
+    if (post.postID === +postID) {
+      post.isViewed = true
+    }
+  })
 };
+
 const closeModal = (event) => {
   event.preventDefault();
   watchedObject.modal.isModalActive = false;
 };
-
 
 
 // View
@@ -161,7 +168,6 @@ const closeModal = (event) => {
 const feedback = document.querySelector('.feedback');
 
 const render = (state) => {
-  console.log(state);
   feedback.textContent = state.errors;
   feedback.classList.remove('text-success');
   feedback.classList.add('text-danger');
@@ -260,8 +266,15 @@ const renderFeeds = (feedsState) => {
       const li = document.createElement('li');
       li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
       const a = document.createElement('a');
-      //TODO change fw-normal/fw-bold when post viewed
-      a.classList.add('fw-bold', 'link-secondary');
+      if (post.isViewed) {
+        a.classList.remove('fw-bold');
+        a.classList.add('fw-normal');
+      }
+      if (!post.isViewed) {
+        a.classList.remove('fw-normal');
+        a.classList.add('fw-bold');
+      }
+      a.classList.add('link-secondary');
       a.href = post.link;
       a.textContent = post.title;
       a.setAttribute('data-id', post.postID);
