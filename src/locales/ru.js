@@ -1,6 +1,11 @@
 export default {
   translation: {
-    blankField: 'Поле ввода Url не заполнено...',
-    incorrectUrl: 'Введенное значение не является ссылкой...',
+    rssLoaded: 'RSS успешно загружен',
+    rssAlreadyExists: 'RSS уже существует',
+    blankField: 'Не должно быть пустым',
+    incorrectUrl: 'Ссылка должна быть валидным URL',
+    notValidRss: 'Ресурс не содержит валидный RSS',
+    view: 'Просмотр',
+    networkError: 'Ошибка сети',
   },
 };

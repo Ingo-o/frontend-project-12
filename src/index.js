@@ -30,36 +30,35 @@ const state = {
 
 const feedsState = {
   feeds: [],
+  feedsLinks: [],
   feedsCount: 0,
   posts: [],
   postsCount: 0,
 }
 
-//TODO подумать как сделать так, чтобы рендеры не вызывались по 10 раз
 
 const watchedObject = onChange(state, (path, value) => {
   if (path === 'inputValue') {
-    const onFulfilled = () => {
-      watchedObject.errors = '';
-      watchedObject.isValid = true;
       getRss(value)
+        .catch((error) => {
+          console.log(error);
+          watchedObject.errors = i18next.t('networkError');
+        })
         .then((response) => parseRss(response.data.contents, value))
+        .catch((error) => {
+          console.log(error);
+          watchedObject.errors = i18next.t('notValidRss');
+        })
         .then((result) => {
           watchedFeeds.feeds = feedsState.feeds.concat(result.feeds);
           watchedFeeds.posts = feedsState.posts.concat(result.posts);
+          watchedFeeds.feedsLinks = feedsState.feedsLinks.concat(result.feedsLinks);
           updatePosts();
         })
-        .then(() => { watchedObject.success = 'RSS успешно загружен' })
+        .then(() => { watchedObject.success = i18next.t('rssLoaded') })
         .catch((error) => {
-            //TODO вывести ошибку в нужное место
             console.log(error);
           });
-    };
-    const onRejected = (error) => {
-      watchedObject.errors = error.message;
-      watchedObject.isValid = false;
-    };
-    schema.validate(state, { abortEarly: false }).then(onFulfilled, onRejected);
   }
   render(state);
   renderFeeds(feedsState);
@@ -75,14 +74,10 @@ i18next.init({
   resources: resources,
 });
 
-const schema = yup.object().shape({
-  //TODO добавить проверку что данного фида еще нет в состоянии
-  inputValue: yup.string().required(i18next.t('blankField')).url(i18next.t('incorrectUrl')),
-});
-
 const parseRss = (xml, linkToFeed) => {
   const result = {
     feeds: [],
+    feedsLinks: [],
     posts: [],
   };
   const parser = new DOMParser();
@@ -95,6 +90,7 @@ const parseRss = (xml, linkToFeed) => {
       feedID: feedsState.feedsCount,
     };
   result.feeds.push(feed);
+  result.feedsLinks.push(linkToFeed);
   items.forEach((item) => {
     const postObj = {
       title: item.querySelector('title').textContent,
@@ -112,8 +108,7 @@ const parseRss = (xml, linkToFeed) => {
 }
 
 const getRss = (linkToFeed) =>
-  //TODO посмотреть как отключить кеш в прокси
-  axios.get(`https://allorigins.hexlet.app/get?url=${encodeURIComponent(linkToFeed)}`);
+  axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(linkToFeed)}`);
 
 const updatePosts = () => {
   if (feedsState.feeds.length > 0) {
@@ -140,7 +135,15 @@ const urlInput = document.querySelector('#url-input');
 
 sendButton.addEventListener('click', (event) => {
   event.preventDefault();
-  watchedObject.inputValue = urlInput.value;
+  const schema = yup.string().required(i18next.t('blankField')).url(i18next.t('incorrectUrl')).notOneOf(feedsState.feedsLinks, i18next.t('rssAlreadyExists'));
+  const onFulfilled = () => {
+    watchedObject.inputValue = urlInput.value;
+  }
+  const onRejected = (error) => {
+    watchedObject.errors = error.message;
+    watchedObject.isValid = false;
+  };
+  schema.validate(urlInput.value).then(onFulfilled, onRejected);
 })
 
 const showModal = (event) => {
@@ -282,7 +285,7 @@ const renderFeeds = (feedsState) => {
       a.setAttribute('rel', 'noopener noreferrer');
       const button = document.createElement('button');
       button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
-      button.textContent = 'Просмотр';
+      button.textContent = i18next.t('view');
       button.setAttribute('type', 'button');
       button.setAttribute('data-id', post.postID);
       button.setAttribute('data-bs-toggle', 'modal');
