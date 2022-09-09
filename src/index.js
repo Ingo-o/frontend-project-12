@@ -36,6 +36,7 @@ const feedsState = {
   postsCount: 0,
 }
 
+//TODO блокировать форму на время выполнения сетевого запроса и парсинга и возможно на валидацию
 
 const watchedObject = onChange(state, (path, value) => {
   if (path === 'inputValue') {
