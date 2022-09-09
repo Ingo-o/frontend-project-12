@@ -20,17 +20,43 @@ const state = {
   isValid: true,
   isActive: true,
   errors: '',
+  success: '',
   lng: 'ru',
 }
 
 const feedsState = {
   feeds: [],
+  feedsCount: 0,
   posts: [],
+  postsCount: 0,
 }
 
 //TODO подумать как сделать так, чтобы рендеры не вызывались по 10 раз
 
 const watchedObject = onChange(state, (path, value, previousValue) => {
+  if (path === 'inputValue') {
+    const onFulfilled = (result) => {
+      watchedObject.errors = '';
+      watchedObject.isValid = true;
+      getRss(value)
+        .then((response) => parseRss(response.data.contents, value))
+        .then((result) => {
+          watchedFeeds.feeds = feedsState.feeds.concat(result.feeds);
+          watchedFeeds.posts = feedsState.posts.concat(result.posts);
+          updatePosts();
+        })
+        .then(() => { watchedObject.success = 'Rss успешно загружен' })
+        .catch((error) => {
+            //TODO вывести ошибку в нужное место
+            console.log(error);
+          });
+    };
+    const onRejected = (error) => {
+      watchedObject.errors = error.message;
+      watchedObject.isValid = false;
+    };
+    schema.validate(state, { abortEarly: false }).then(onFulfilled, onRejected);
+  }
   render(state);
 });
 
@@ -51,6 +77,10 @@ const schema = yup.object().shape({
 });
 
 const parseRss = (xml, linkToFeed) => {
+  const result = {
+    feeds: [],
+    posts: [],
+  };
   const parser = new DOMParser();
   const data = parser.parseFromString(xml, 'application/xml');
   const items = data.querySelectorAll('item');
@@ -58,44 +88,45 @@ const parseRss = (xml, linkToFeed) => {
       title: data.querySelector('channel title').textContent,
       description: data.querySelector('channel description').textContent,
       linkToFeed: linkToFeed,
+      feedID: feedsState.feedsCount,
     };
-  watchedFeeds.feeds.push(feed);
+  result.feeds.push(feed);
   items.forEach((item) => {
-    const itemObj = {
+    const postObj = {
       title: item.querySelector('title').textContent,
       description: item.querySelector('description').textContent,
       link: item.querySelector('link').textContent,
-    }
-    watchedFeeds.posts.push(itemObj);
+      feedID: feed.feedID,
+      postID: feedsState.postsCount,
+    };
+    result.posts.push(postObj);
+    feedsState.postsCount += 1;
   })
+  feedsState.feedsCount +=1;
+  return result;
 }
 
-const getRss = () => {
-  const linkToFeed = state.inputValue;
+const getRss = (linkToFeed) =>
   //TODO посмотреть как отключить кеш в прокси
-  axios.get(`https://allorigins.hexlet.app/get?url=${encodeURIComponent(linkToFeed)}`)
-    .then((response) => {
-      parseRss(response.data.contents, linkToFeed);
-    })
-    .catch((error) => {
-      //TODO вывести ошибку в нужное место
-      console.log(error);
-    })
-}
+  axios.get(`https://allorigins.hexlet.app/get?url=${encodeURIComponent(linkToFeed)}`);
 
-const onFulfilled = (result) => {
-  watchedObject.errors = '';
-  watchedObject.isValid = true;
-  getRss();
-  //TODO вывести сообщение об успешной загрузке RSS
-}
-
-const onRejected = (error) => {
-  watchedObject.errors = error.message;
-  watchedObject.isValid = false;
-}
-
-const validate = (fields) => schema.validate(fields, { abortEarly: false }).then(onFulfilled, onRejected);
+const updatePosts = () => {
+  console.log('Вызов функции апдейта постов')
+  if (feedsState.feeds.length > 0) {
+    feedsState.feeds.forEach((feed) => {
+      getRss(feed.linkToFeed)
+        .then((response) => parseRss(response.data.contents, feed.linkToFeed))
+        .then((result) => {
+          const currentPostTitles = feedsState.posts.map((post) => post.title);
+          const newPosts = result.posts.filter((post) => !currentPostTitles.includes(post.title));
+          watchedFeeds.posts.push(...newPosts);
+        })
+        .then(() => {
+          setTimeout(updatePosts, 5000);
+        })
+    });
+  }
+};
 
 // Controller
 // Обработчики
@@ -106,7 +137,6 @@ const urlInput = document.querySelector('#url-input');
 sendButton.addEventListener('click', (event) => {
   event.preventDefault();
   watchedObject.inputValue = urlInput.value;
-  watchedObject.errors = validate(state);
 })
 
 // View
@@ -115,11 +145,20 @@ sendButton.addEventListener('click', (event) => {
 const feedback = document.querySelector('.feedback');
 
 const render = (state) => {
+  console.log(state);
   feedback.textContent = state.errors;
+  feedback.classList.remove('text-success');
+  feedback.classList.add('text-danger')
   if (state.isValid === true) {
     urlInput.classList.remove('is-invalid');
   } else {
     urlInput.classList.add('is-invalid');
+  }
+  if (state.success !== '') {
+    feedback.textContent = state.success;
+    feedback.classList.remove('text-danger');
+    feedback.classList.add('text-success');
+    state.success = '';
   }
 };
 
@@ -160,8 +199,6 @@ const renderFeeds = (feedsState) => {
     divFeeds.appendChild(divCard);
   }
 
-  //TODO добавить атрибуты в теги
-  //TODO добавить идентификаторы для выборки + нормализация данных
   const divPosts = document.querySelector('.posts');
   divPosts.textContent = '';
 
@@ -185,9 +222,16 @@ const renderFeeds = (feedsState) => {
       a.classList.add('fw-normal', 'link-secondary');
       a.href = post.link;
       a.textContent = post.title;
+      a.setAttribute('data-id', post.postID);
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
       const button = document.createElement('button');
       button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
       button.textContent = 'Просмотр';
+      button.setAttribute('type', 'button');
+      button.setAttribute('data-id', post.postID);
+      button.setAttribute('data-bs-toggle', 'modal');
+      button.setAttribute('data-bs-target', '#modal');
       li.appendChild(a);
       li.appendChild(button);
       ul.appendChild(li);
