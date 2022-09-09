@@ -37,9 +37,9 @@ const feedsState = {
 
 //TODO подумать как сделать так, чтобы рендеры не вызывались по 10 раз
 
-const watchedObject = onChange(state, (path, value, previousValue) => {
+const watchedObject = onChange(state, (path, value) => {
   if (path === 'inputValue') {
-    const onFulfilled = (result) => {
+    const onFulfilled = () => {
       watchedObject.errors = '';
       watchedObject.isValid = true;
       getRss(value)
@@ -49,7 +49,7 @@ const watchedObject = onChange(state, (path, value, previousValue) => {
           watchedFeeds.posts = feedsState.posts.concat(result.posts);
           updatePosts();
         })
-        .then(() => { watchedObject.success = 'Rss успешно загружен' })
+        .then(() => { watchedObject.success = 'RSS успешно загружен' })
         .catch((error) => {
             //TODO вывести ошибку в нужное место
             console.log(error);
@@ -65,7 +65,7 @@ const watchedObject = onChange(state, (path, value, previousValue) => {
   renderFeeds(feedsState);
 });
 
-const watchedFeeds = onChange(feedsState, (path, value, previousValue) => {
+const watchedFeeds = onChange(feedsState, () => {
   renderFeeds(feedsState);
 });
 
@@ -297,6 +297,5 @@ const renderFeeds = (feedsState) => {
     divCard.appendChild(ul);
     divPosts.appendChild(divCard);
   }
-
 
 }
