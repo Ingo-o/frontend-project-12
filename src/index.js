@@ -22,6 +22,10 @@ const state = {
   errors: '',
   success: '',
   lng: 'ru',
+  modal: {
+    isModalActive: false,
+    postID: '',
+  }
 }
 
 const feedsState = {
@@ -58,10 +62,10 @@ const watchedObject = onChange(state, (path, value, previousValue) => {
     schema.validate(state, { abortEarly: false }).then(onFulfilled, onRejected);
   }
   render(state);
+  renderFeeds(feedsState);
 });
 
 const watchedFeeds = onChange(feedsState, (path, value, previousValue) => {
-  console.log(feedsState);
   renderFeeds(feedsState);
 });
 
@@ -139,6 +143,18 @@ sendButton.addEventListener('click', (event) => {
   watchedObject.inputValue = urlInput.value;
 })
 
+const showModal = (event) => {
+  event.preventDefault();
+  watchedObject.modal.isModalActive = true;
+  watchedObject.modal.postID = event.target.getAttribute('data-id');
+};
+const closeModal = (event) => {
+  event.preventDefault();
+  watchedObject.modal.isModalActive = false;
+};
+
+
+
 // View
 // Отрисовка UI и взаимодействие с DOM
 
@@ -148,7 +164,7 @@ const render = (state) => {
   console.log(state);
   feedback.textContent = state.errors;
   feedback.classList.remove('text-success');
-  feedback.classList.add('text-danger')
+  feedback.classList.add('text-danger');
   if (state.isValid === true) {
     urlInput.classList.remove('is-invalid');
   } else {
@@ -159,6 +175,31 @@ const render = (state) => {
     feedback.classList.remove('text-danger');
     feedback.classList.add('text-success');
     state.success = '';
+  }
+  if (state.modal.isModalActive) {
+    const modal = document.querySelector('.modal');
+    modal.classList.add('show');
+    modal.setAttribute('style', 'display: block;');
+    modal.setAttribute('aria-modal', 'true');
+    modal.removeAttribute('aria-hidden');
+    const modalTitle = document.querySelector('.modal-title');
+    const post = feedsState.posts.filter((post) => post.postID === +state.modal.postID)[0];
+    modalTitle.textContent = post.title;
+    const modalBody = document.querySelector('.modal-body');
+    modalBody.textContent = post.description;
+    const readButton = document.querySelector('.modal-footer a');
+    readButton.href = post.link;
+    const closeIcon = document.querySelector('.modal-header button');
+    const closeButton = document.querySelector('.modal-footer button');
+    closeIcon.addEventListener('click', closeModal);
+    closeButton.addEventListener('click', closeModal);
+  }
+  if (!state.modal.isModalActive) {
+    const modal = document.querySelector('.modal');
+    modal.classList.remove('show');
+    modal.removeAttribute('style');
+    modal.removeAttribute('aria-modal');
+    modal.setAttribute('aria-hidden', 'true');
   }
 };
 
@@ -219,7 +260,8 @@ const renderFeeds = (feedsState) => {
       const li = document.createElement('li');
       li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
       const a = document.createElement('a');
-      a.classList.add('fw-normal', 'link-secondary');
+      //TODO change fw-normal/fw-bold when post viewed
+      a.classList.add('fw-bold', 'link-secondary');
       a.href = post.link;
       a.textContent = post.title;
       a.setAttribute('data-id', post.postID);
@@ -232,6 +274,7 @@ const renderFeeds = (feedsState) => {
       button.setAttribute('data-id', post.postID);
       button.setAttribute('data-bs-toggle', 'modal');
       button.setAttribute('data-bs-target', '#modal');
+      button.addEventListener('click', showModal);
       li.appendChild(a);
       li.appendChild(button);
       ul.appendChild(li);
@@ -241,4 +284,6 @@ const renderFeeds = (feedsState) => {
     divCard.appendChild(ul);
     divPosts.appendChild(divCard);
   }
+
+
 }
