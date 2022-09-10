@@ -141,6 +141,7 @@ const showModal = (event) => {
   // помечаем открытый пост как просмотренный
   watchedFeeds.posts.forEach((post) => {
     if (post.postID === +postID) {
+      // eslint-disable-next-line no-param-reassign
       post.isViewed = true;
     }
   });
