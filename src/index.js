@@ -41,14 +41,14 @@ const watchedObject = onChange(state, (path, value) => {
     getRss(value)
       .catch((error) => {
         console.log(error);
-        watchedObject.errors = i18next.t('networkError');
         enableFormInput();
+        watchedObject.errors = i18next.t('networkError');
       })
       .then((response) => parseRss(response.data.contents, value))
       .catch((error) => {
         console.log(error);
-        watchedObject.errors = i18next.t('notValidRss');
         enableFormInput();
+        watchedObject.errors = i18next.t('notValidRss');
       })
       .then((result) => {
         watchedFeeds.feeds = feedsState.feeds.concat(result.feeds);
@@ -57,8 +57,8 @@ const watchedObject = onChange(state, (path, value) => {
         updatePosts();
       })
       .then(() => {
-        watchedObject.success = i18next.t('rssLoaded');
         enableFormInput();
+        watchedObject.success = i18next.t('rssLoaded');
       })
       .catch((error) => {
         console.log(error);
