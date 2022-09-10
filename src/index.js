@@ -283,12 +283,14 @@ const renderFeeds = (feedsState) => {
       if (post.isViewed) {
         a.classList.remove('fw-bold');
         a.classList.add('fw-normal');
+        a.classList.add('link-secondary');
       }
       if (!post.isViewed) {
         a.classList.remove('fw-normal');
+        a.classList.remove('link-secondary');
         a.classList.add('fw-bold');
       }
-      a.classList.add('link-secondary');
+
       a.href = post.link;
       a.textContent = post.title;
       a.setAttribute('data-id', post.postID);
