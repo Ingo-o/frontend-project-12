@@ -36,7 +36,7 @@ const feedsState = {
   postsCount: 0,
 };
 
-const watchedObject = onChange(state, (path, value) => {
+const watchedObject = onChange(state, () => {
   render(state);
   renderFeeds(feedsState);
 });
