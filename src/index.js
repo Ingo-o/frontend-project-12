@@ -34,32 +34,36 @@ const feedsState = {
   feedsCount: 0,
   posts: [],
   postsCount: 0,
-}
-
-//TODO блокировать форму на время выполнения сетевого запроса и парсинга и возможно на валидацию
+};
 
 const watchedObject = onChange(state, (path, value) => {
   if (path === 'inputValue') {
-      getRss(value)
-        .catch((error) => {
-          console.log(error);
-          watchedObject.errors = i18next.t('networkError');
-        })
-        .then((response) => parseRss(response.data.contents, value))
-        .catch((error) => {
-          console.log(error);
-          watchedObject.errors = i18next.t('notValidRss');
-        })
-        .then((result) => {
-          watchedFeeds.feeds = feedsState.feeds.concat(result.feeds);
-          watchedFeeds.posts = feedsState.posts.concat(result.posts);
-          watchedFeeds.feedsLinks = feedsState.feedsLinks.concat(result.feedsLinks);
-          updatePosts();
-        })
-        .then(() => { watchedObject.success = i18next.t('rssLoaded') })
-        .catch((error) => {
-            console.log(error);
-          });
+    getRss(value)
+      .catch((error) => {
+        console.log(error);
+        watchedObject.errors = i18next.t('networkError');
+        enableFormInput();
+      })
+      .then((response) => parseRss(response.data.contents, value))
+      .catch((error) => {
+        console.log(error);
+        watchedObject.errors = i18next.t('notValidRss');
+        enableFormInput();
+      })
+      .then((result) => {
+        watchedFeeds.feeds = feedsState.feeds.concat(result.feeds);
+        watchedFeeds.posts = feedsState.posts.concat(result.posts);
+        watchedFeeds.feedsLinks = feedsState.feedsLinks.concat(result.feedsLinks);
+        updatePosts();
+      })
+      .then(() => {
+        watchedObject.success = i18next.t('rssLoaded');
+        enableFormInput();
+      })
+      .catch((error) => {
+        console.log(error);
+        enableFormInput();
+      });
   }
   render(state);
   renderFeeds(feedsState);
@@ -74,6 +78,13 @@ i18next.init({
   debug: true,
   resources: resources,
 });
+
+const disableFormInput = () => {
+  watchedObject.isActive = false;
+};
+const enableFormInput = () => {
+  watchedObject.isActive = true;
+};
 
 const parseRss = (xml, linkToFeed) => {
   const result = {
@@ -136,6 +147,7 @@ const urlInput = document.querySelector('#url-input');
 
 sendButton.addEventListener('click', (event) => {
   event.preventDefault();
+  disableFormInput();
   const schema = yup.string().required(i18next.t('blankField')).url(i18next.t('incorrectUrl')).notOneOf(feedsState.feedsLinks, i18next.t('rssAlreadyExists'));
   const onFulfilled = () => {
     watchedObject.inputValue = urlInput.value;
@@ -143,6 +155,7 @@ sendButton.addEventListener('click', (event) => {
   const onRejected = (error) => {
     watchedObject.errors = error.message;
     watchedObject.isValid = false;
+    enableFormInput();
   };
   schema.validate(urlInput.value).then(onFulfilled, onRejected);
 })
@@ -210,6 +223,14 @@ const render = (state) => {
     modal.removeAttribute('style');
     modal.removeAttribute('aria-modal');
     modal.setAttribute('aria-hidden', 'true');
+  }
+  if (state.isActive) {
+    urlInput.removeAttribute('readonly');
+    sendButton.removeAttribute('disabled');
+  }
+  if (!state.isActive) {
+    urlInput.setAttribute('readonly', '');
+    sendButton.setAttribute('disabled', '');
   }
 };
 
