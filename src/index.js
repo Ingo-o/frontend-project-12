@@ -25,7 +25,7 @@ const state = {
   modal: {
     isModalActive: false,
     postID: '',
-  }
+  },
 }
 
 const feedsState = {
@@ -37,34 +37,6 @@ const feedsState = {
 };
 
 const watchedObject = onChange(state, (path, value) => {
-  if (path === 'inputValue') {
-    getRss(value)
-      .catch((error) => {
-        console.log(error);
-        enableFormInput();
-        watchedObject.errors = i18next.t('networkError');
-      })
-      .then((response) => parseRss(response.data.contents, value))
-      .catch((error) => {
-        console.log(error);
-        enableFormInput();
-        watchedObject.errors = i18next.t('notValidRss');
-      })
-      .then((result) => {
-        watchedFeeds.feeds = feedsState.feeds.concat(result.feeds);
-        watchedFeeds.posts = feedsState.posts.concat(result.posts);
-        watchedFeeds.feedsLinks = feedsState.feedsLinks.concat(result.feedsLinks);
-        updatePosts();
-      })
-      .then(() => {
-        enableFormInput();
-        watchedObject.success = i18next.t('rssLoaded');
-      })
-      .catch((error) => {
-        console.log(error);
-        enableFormInput();
-      });
-  }
   render(state);
   renderFeeds(feedsState);
 });
@@ -87,40 +59,45 @@ const enableFormInput = () => {
 };
 
 const parseRss = (xml, linkToFeed) => {
-  const result = {
-    feeds: [],
-    feedsLinks: [],
-    posts: [],
-  };
-  const parser = new DOMParser();
-  const data = parser.parseFromString(xml, 'application/xml');
-  const items = data.querySelectorAll('item');
-  const feed = {
+  try {
+    const result = {
+      feeds: [],
+      feedsLinks: [],
+      posts: [],
+    };
+    const parser = new DOMParser();
+    const data = parser.parseFromString(xml, 'application/xml');
+    const items = data.querySelectorAll('item');
+    const feed = {
       title: data.querySelector('channel title').textContent,
       description: data.querySelector('channel description').textContent,
       linkToFeed: linkToFeed,
       feedID: feedsState.feedsCount,
     };
-  result.feeds.push(feed);
-  result.feedsLinks.push(linkToFeed);
-  items.forEach((item) => {
-    const postObj = {
-      title: item.querySelector('title').textContent,
-      description: item.querySelector('description').textContent,
-      link: item.querySelector('link').textContent,
-      feedID: feed.feedID,
-      postID: feedsState.postsCount,
-      isViewed: false,
-    };
-    result.posts.push(postObj);
-    feedsState.postsCount += 1;
-  })
-  feedsState.feedsCount +=1;
-  return result;
+    result.feeds.push(feed);
+    result.feedsLinks.push(linkToFeed);
+    items.forEach((item) => {
+      const postObj = {
+        title: item.querySelector('title').textContent,
+        description: item.querySelector('description').textContent,
+        link: item.querySelector('link').textContent,
+        feedID: feed.feedID,
+        postID: feedsState.postsCount,
+        isViewed: false,
+      };
+      result.posts.push(postObj);
+      feedsState.postsCount += 1;
+    })
+    feedsState.feedsCount +=1;
+    return result;
+  } catch (error) {
+    throw Error(i18next.t('notValidRss'));
+  }
 }
 
 const getRss = (linkToFeed) =>
-  axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(linkToFeed)}`);
+  axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(linkToFeed)}`)
+    .catch(() => { throw Error('networkError'); });
 
 const updatePosts = () => {
   if (feedsState.feeds.length > 0) {
@@ -148,16 +125,28 @@ const urlInput = document.querySelector('#url-input');
 sendButton.addEventListener('click', (event) => {
   event.preventDefault();
   disableFormInput();
-  const schema = yup.string().required(i18next.t('blankField')).url(i18next.t('incorrectUrl')).notOneOf(feedsState.feedsLinks, i18next.t('rssAlreadyExists'));
-  const onFulfilled = () => {
-    watchedObject.inputValue = urlInput.value;
-  }
-  const onRejected = (error) => {
-    watchedObject.errors = error.message;
-    watchedObject.isValid = false;
-    enableFormInput();
-  };
-  schema.validate(urlInput.value).then(onFulfilled, onRejected);
+  const schema = yup.string().required('blankField').url('incorrectUrl').notOneOf(feedsState.feedsLinks, 'rssAlreadyExists');
+  schema.validate(urlInput.value)
+    .then((link) => getRss(link))
+    .then((response) => parseRss(response.data.contents, urlInput.value))
+    .then((result) => {
+      watchedFeeds.feeds = feedsState.feeds.concat(result.feeds);
+      watchedFeeds.posts = feedsState.posts.concat(result.posts);
+      watchedFeeds.feedsLinks = feedsState.feedsLinks.concat(result.feedsLinks);
+    })
+    .then(() => {
+      enableFormInput();
+      watchedObject.success = i18next.t('rssLoaded');
+      urlInput.value = '';
+      updatePosts();
+    })
+    .catch((error) => {
+      console.log(error);
+      watchedObject.errors = i18next.t(error.message);
+      watchedObject.isValid = false;
+      enableFormInput();
+    });
+
 })
 
 const showModal = (event) => {

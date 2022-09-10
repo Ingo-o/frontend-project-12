@@ -4,8 +4,8 @@ export default {
     rssAlreadyExists: 'RSS уже существует',
     blankField: 'Не должно быть пустым',
     incorrectUrl: 'Ссылка должна быть валидным URL',
-    notValidRss: 'Ресурс не содержит валидный RSS',
     view: 'Просмотр',
+    notValidRss: 'Ресурс не содержит валидный RSS',
     networkError: 'Ошибка сети',
   },
 };
