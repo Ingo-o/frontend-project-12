@@ -9,6 +9,7 @@ import axios from 'axios';
 import resources from './locales/index.js';
 import state from './utils/state.js';
 import feedsState from './utils/feedsState.js';
+import parseRss from './utils/parseRss.js';
 // View
 // Отрисовка UI и взаимодействие с DOM
 import render from './utils/render.js';
@@ -16,7 +17,6 @@ import renderFeeds from './utils/renderFeeds.js';
 
 // https://stopgame.ru/rss/rss_news.xml
 // https://ru.hexlet.io/lessons.rss
-// TODO почитать побольше про архитектуру и перенести функции в нужные части приложения
 
 // Model
 // Состояние, данные и логика приложения
@@ -41,43 +41,6 @@ const disableFormInput = () => {
 };
 const enableFormInput = () => {
   watchedObject.isActive = true;
-};
-
-const parseRss = (xml, linkToFeed) => {
-  try {
-    const result = {
-      feeds: [],
-      feedsLinks: [],
-      posts: [],
-    };
-    const parser = new DOMParser();
-    const data = parser.parseFromString(xml, 'application/xml');
-    const items = data.querySelectorAll('item');
-    const feed = {
-      title: data.querySelector('channel title').textContent,
-      description: data.querySelector('channel description').textContent,
-      linkToFeed,
-      feedID: feedsState.feedsCount,
-    };
-    result.feeds.push(feed);
-    result.feedsLinks.push(linkToFeed);
-    items.forEach((item) => {
-      const postObj = {
-        title: item.querySelector('title').textContent,
-        description: item.querySelector('description').textContent,
-        link: item.querySelector('link').textContent,
-        feedID: feed.feedID,
-        postID: feedsState.postsCount,
-        isViewed: false,
-      };
-      result.posts.push(postObj);
-      feedsState.postsCount += 1;
-    });
-    feedsState.feedsCount += 1;
-    return result;
-  } catch (error) {
-    throw Error(i18next.t('notValidRss'));
-  }
 };
 
 const getRss = (linkToFeed) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(linkToFeed)}`).catch(() => { throw Error('networkError'); });
@@ -113,9 +76,10 @@ sendButton.addEventListener('click', (event) => {
     .then((link) => getRss(link))
     .then((response) => parseRss(response.data.contents, urlInput.value))
     .then((result) => {
-      watchedFeeds.feeds = feedsState.feeds.concat(result.feeds);
-      watchedFeeds.posts = feedsState.posts.concat(result.posts);
-      watchedFeeds.feedsLinks = feedsState.feedsLinks.concat(result.feedsLinks);
+      console.log(result);
+      watchedFeeds.feeds.push(result.feed);
+      watchedFeeds.posts.push(result.posts);
+      watchedFeeds.feedsLinks.push(result.linkToFeed);
     })
     .then(() => {
       enableFormInput();
