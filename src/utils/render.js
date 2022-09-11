@@ -1,6 +1,4 @@
-import feedsState from './feedsState.js';
-
-export default (state) => {
+export default (state, feedsState) => {
   const feedback = document.querySelector('.feedback');
   const sendButton = document.querySelector('form button');
   const urlInput = document.querySelector('#url-input');
@@ -16,6 +14,7 @@ export default (state) => {
     feedback.textContent = state.success;
     feedback.classList.remove('text-danger');
     feedback.classList.add('text-success');
+    // eslint-disable-next-line no-param-reassign
     state.success = '';
   }
   if (state.modal.isModalActive) {

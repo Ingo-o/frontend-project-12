@@ -22,7 +22,7 @@ import renderFeeds from './utils/renderFeeds.js';
 // Состояние, данные и логика приложения
 
 const watchedObject = onChange(state, () => {
-  render(state);
+  render(state, feedsState);
   renderFeeds(feedsState);
 });
 
@@ -76,9 +76,8 @@ sendButton.addEventListener('click', (event) => {
     .then((link) => getRss(link))
     .then((response) => parseRss(response.data.contents, urlInput.value))
     .then((result) => {
-      console.log(result);
       watchedFeeds.feeds.push(result.feed);
-      watchedFeeds.posts.push(result.posts);
+      watchedFeeds.posts = feedsState.posts.concat(result.posts);
       watchedFeeds.feedsLinks.push(result.linkToFeed);
     })
     .then(() => {
@@ -99,9 +98,9 @@ sendButton.addEventListener('click', (event) => {
 
 const showModal = (event) => {
   event.preventDefault();
-  watchedObject.modal.isModalActive = true;
   const postID = event.target.getAttribute('data-id');
   watchedObject.modal.postID = postID;
+  watchedObject.modal.isModalActive = true;
   // помечаем открытый пост как просмотренный
   watchedFeeds.posts.forEach((post) => {
     if (post.postID === +postID) {
