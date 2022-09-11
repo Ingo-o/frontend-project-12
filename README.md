@@ -1,7 +1,7 @@
 # RSS Reader
 Allow a user to keep track of many websites in a single news aggregator, which constantly monitor sites for a new content. Was done as a study project №3 on JavaScrip course of Hexlet.
 
-###Visit a link to explore
+### Visit a link to explore
 ```
 https://frontend-project-11-self.vercel.app/
 ```
@@ -11,7 +11,7 @@ https://frontend-project-11-self.vercel.app/
 ### CodeClimate:
 [![Maintainability](https://api.codeclimate.com/v1/badges/138a4181571610ebdbf5/maintainability)](https://codeclimate.com/github/IvanZezyukin/frontend-project-11/maintainability)
 
-###List of used technologies
+### List of used technologies
 ```
 - webpack
 - eslint
